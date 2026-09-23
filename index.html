@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classroom Scoreboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky:#EAF4FF;
+    --ink:#2E3A59;
+    --card:#FFFFFF;
+    --line:#D7E4F5;
+    --minus:#FF6B6B;
+    --plus:#4ECDC4;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--sky);
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  h1,h2{
+    font-family:'Baloo 2', sans-serif;
+    margin:0 0 6px 0;
+  }
+  .page{
+    width:100%;
+    max-width:720px;
+  }
+  .hidden{ display:none !important; }
+
+  /* ---- Setup page ---- */
+  .panel{
+    background:var(--card);
+    border:3px solid var(--line);
+    border-radius:24px;
+    padding:32px;
+  }
+  .lead{
+    color:#6B7A99;
+    font-weight:700;
+    margin-bottom:24px;
+  }
+  input[type="number"], input[type="text"]{
+    font-family:'Nunito', sans-serif;
+    font-weight:700;
+    font-size:1.1rem;
+    border:3px solid var(--line);
+    border-radius:14px;
+    padding:12px 16px;
+    color:var(--ink);
+    width:100%;
+  }
+  input[type="number"]:focus, input[type="text"]:focus{
+    outline:none;
+    border-color:#4D96FF;
+  }
+  button{
+    font-family:'Baloo 2', sans-serif;
+    cursor:pointer;
+    border:none;
+  }
+  .btn-main{
+    background:#4D96FF;
+    color:#fff;
+    font-size:1.15rem;
+    font-weight:700;
+    padding:14px 28px;
+    border-radius:16px;
+    margin-top:20px;
+    width:100%;
+  }
+  .btn-main:hover{ background:#3B82F6; }
+
+  .team-row{
+    border:3px solid var(--line);
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .team-row-top{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .team-row-top .chosen-icon{
+    font-size:2rem;
+    width:52px;
+    height:52px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--sky);
+    border-radius:12px;
+    flex-shrink:0;
+  }
+  .icon-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:8px;
+  }
+  .icon-btn{
+    background:var(--sky);
+    border-radius:12px;
+    font-size:1.6rem;
+    padding:8px 0;
+    border:3px solid transparent;
+  }
+  .icon-btn.selected{
+    border-color:#4D96FF;
+    background:#DCEBFF;
+  }
+
+  /* ---- Score page ---- */
+  #page-score{ max-width:960px; }
+  .score-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+  }
+  .btn-reset{
+    background:transparent;
+    color:#6B7A99;
+    font-weight:700;
+    text-decoration:underline;
+    padding:8px;
+  }
+  .score-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:18px;
+  }
+  .team-card{
+    background:var(--card);
+    border-radius:22px;
+    padding:22px 18px;
+    text-align:center;
+    border-bottom:8px solid var(--accent, #4D96FF);
+    box-shadow:0 4px 0 var(--line);
+  }
+  .team-card .icon{
+    font-size:2.8rem;
+    line-height:1;
+  }
+  .team-card .name{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:1.15rem;
+    margin:8px 0 14px 0;
+    word-break:break-word;
+  }
+  .team-card .stars{
+    font-family:'Baloo 2', sans-serif;
+    font-size:2.2rem;
+    font-weight:800;
+    margin-bottom:16px;
+  }
+  .team-card .stars.negative{ color:var(--minus); }
+  .star-controls{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+  }
+  .star-controls button{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    font-size:1.6rem;
+    font-weight:800;
+    color:#fff;
+  }
+  .btn-plus{ background:var(--plus); }
+  .btn-plus:active{ transform:scale(0.92); }
+  .btn-minus{ background:var(--minus); }
+  .btn-minus:active{ transform:scale(0.92); }
+
+  /* ---- Add team: floating button + modal ---- */
+  .add-team-fab{
+    position:fixed;
+    top:20px;
+    left:20px;
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    background:#4D96FF;
+    color:#fff;
+    font-size:1.6rem;
+    font-weight:800;
+    line-height:1;
+    box-shadow:0 4px 10px rgba(46,58,89,0.25);
+    z-index:20;
+  }
+  .add-team-fab:hover{ background:#3B82F6; }
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(46,58,89,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:30;
+  }
+  .modal-box{
+    position:relative;
+    background:var(--card);
+    border-radius:24px;
+    padding:28px;
+    width:100%;
+    max-width:380px;
+  }
+  .modal-close{
+    position:absolute;
+    top:14px;
+    right:14px;
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:var(--sky);
+    color:var(--ink);
+    font-size:1.2rem;
+    line-height:1;
+  }
+  .no-icons-msg{
+    color:#6B7A99;
+    font-weight:700;
+    margin-top:14px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- PAGE 1: how many teams -->
+  <div class="page" id="page-count">
+    <div class="panel">
+      <h1>Classroom Scoreboard</h1>
+      <p class="lead">How many teams are playing today?</p>
+      <input type="number" id="team-count-input" min="1" max="12" value="4">
+      <button class="btn-main" id="go-to-teams-btn">Continue</button>
+    </div>
+  </div>
+
+  <!-- PAGE 2: name + icon for each team -->
+  <div class="page hidden" id="page-teams">
+    <div class="panel">
+      <h1>Set Up Teams</h1>
+      <p class="lead">Give each team a name and pick their icon.</p>
+      <div id="team-rows"></div>
+      <button class="btn-main" id="go-to-score-btn">Start Scoring!</button>
+    </div>
+  </div>
+
+  <!-- PAGE 3: scoreboard -->
+  <div class="page hidden" id="page-score">
+    <button class="add-team-fab" id="open-add-team-btn" title="Add a team">+</button>
+    <div class="score-header">
+      <h1>Scoreboard</h1>
+      <button class="btn-reset" id="reset-btn">↺ New Game</button>
+    </div>
+    <div class="score-grid" id="score-grid"></div>
+
+    <div class="modal-overlay hidden" id="add-team-modal">
+      <div class="modal-box">
+        <button class="modal-close" id="close-add-team-btn" title="Close">&times;</button>
+        <h2>Add a Team</h2>
+        <input type="text" id="new-team-name" placeholder="Team name">
+        <div class="icon-grid" id="new-team-icon-grid"></div>
+        <p class="no-icons-msg hidden" id="no-icons-msg">All icons are already in use — remove one first if you want to add another team.</p>
+        <button class="btn-main" id="add-team-btn">+ Add Team</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const ICONS = ["🦁","🐼","🐯","🦊","🐰","🐸","🐻","🦄","🐶","🐱"];
+  const CARD_COLORS = ["#FF6B6B","#4ECDC4","#FFD93D","#6BCB77","#4D96FF","#B983FF","#FF9F45","#FF6FB5","#5AC8FA","#95E06C","#FFB454","#C77DFF"];
+
+  let teams = []; // { name, icon, stars }
+  let newTeamIcon = null;
+
+  const pageCount = document.getElementById('page-count');
+  const pageTeams = document.getElementById('page-teams');
+  const pageScore = document.getElementById('page-score');
+
+  document.getElementById('go-to-teams-btn').addEventListener('click', () => {
+    let count = parseInt(document.getElementById('team-count-input').value, 10);
+    if (!count || count < 1) count = 1;
+    if (count > 12) count = 12;
+
+    const rowsContainer = document.getElementById('team-rows');
+    rowsContainer.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+      const row = document.createElement('div');
+      row.className = 'team-row';
+      row.dataset.index = i;
+
+      const defaultIcon = ICONS[i % ICONS.length];
+
+      row.innerHTML = `
+        <div class="team-row-top">
+          <div class="chosen-icon">${defaultIcon}</div>
+          <input type="text" class="team-name-input" value="Team ${i + 1}" placeholder="Team name">
+        </div>
+        <div class="icon-grid">
+          ${ICONS.map(icon => `<button type="button" class="icon-btn${icon === defaultIcon ? ' selected' : ''}" data-icon="${icon}">${icon}</button>`).join('')}
+        </div>
+      `;
+
+      row.querySelectorAll('.icon-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          row.querySelector('.chosen-icon').textContent = btn.dataset.icon;
+        });
+      });
+
+      rowsContainer.appendChild(row);
+    }
+
+    pageCount.classList.add('hidden');
+    pageTeams.classList.remove('hidden');
+  });
+
+  document.getElementById('go-to-score-btn').addEventListener('click', () => {
+    const rows = document.querySelectorAll('.team-row');
+    teams = Array.from(rows).map(row => {
+      const nameInput = row.querySelector('.team-name-input');
+      const selectedIcon = row.querySelector('.icon-btn.selected');
+      return {
+        name: nameInput.value.trim() || 'Team',
+        icon: selectedIcon ? selectedIcon.dataset.icon : ICONS[0],
+        stars: 0
+      };
+    });
+
+    renderScoreboard();
+    pageTeams.classList.add('hidden');
+    pageScore.classList.remove('hidden');
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    pageScore.classList.add('hidden');
+    pageCount.classList.remove('hidden');
+  });
+
+  function renderScoreboard() {
+    const grid = document.getElementById('score-grid');
+    grid.innerHTML = '';
+
+    teams.forEach((team, index) => {
+      const card = document.createElement('div');
+      card.className = 'team-card';
+      card.style.setProperty('--accent', CARD_COLORS[index % CARD_COLORS.length]);
+      card.innerHTML = `
+        <div class="icon">${team.icon}</div>
+        <div class="name">${escapeHtml(team.name)}</div>
+        <div class="stars" id="stars-${index}">★ ${team.stars}</div>
+        <div class="star-controls">
+          <button type="button" class="btn-minus" data-index="${index}">−</button>
+          <button type="button" class="btn-plus" data-index="${index}">+</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll('.btn-plus').forEach(btn => {
+      btn.addEventListener('click', () => changeStars(parseInt(btn.dataset.index, 10), 1));
+    });
+    grid.querySelectorAll('.btn-minus').forEach(btn => {
+      btn.addEventListener('click', () => changeStars(parseInt(btn.dataset.index, 10), -1));
+    });
+
+    renderAddTeamIconPicker();
+  }
+
+  function changeStars(index, delta) {
+    teams[index].stars += delta;
+    const starsEl = document.getElementById(`stars-${index}`);
+    starsEl.textContent = `★ ${teams[index].stars}`;
+    starsEl.classList.toggle('negative', teams[index].stars < 0);
+  }
+
+  function renderAddTeamIconPicker() {
+    const iconGrid = document.getElementById('new-team-icon-grid');
+    const noIconsMsg = document.getElementById('no-icons-msg');
+    const addBtn = document.getElementById('add-team-btn');
+    const usedIcons = teams.map(t => t.icon);
+    const availableIcons = ICONS.filter(icon => !usedIcons.includes(icon));
+
+    newTeamIcon = null;
+    iconGrid.innerHTML = '';
+
+    if (availableIcons.length === 0) {
+      iconGrid.classList.add('hidden');
+      noIconsMsg.classList.remove('hidden');
+      addBtn.disabled = true;
+      return;
+    }
+
+    iconGrid.classList.remove('hidden');
+    noIconsMsg.classList.add('hidden');
+    addBtn.disabled = false;
+
+    availableIcons.forEach(icon => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'icon-btn';
+      btn.dataset.icon = icon;
+      btn.textContent = icon;
+      btn.addEventListener('click', () => {
+        iconGrid.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        newTeamIcon = icon;
+      });
+      iconGrid.appendChild(btn);
+    });
+  }
+
+  document.getElementById('add-team-btn').addEventListener('click', () => {
+    const nameInput = document.getElementById('new-team-name');
+    const name = nameInput.value.trim();
+
+    if (!name) {
+      nameInput.focus();
+      return;
+    }
+    if (!newTeamIcon) {
+      return;
+    }
+
+    teams.push({ name, icon: newTeamIcon, stars: 0 });
+    nameInput.value = '';
+    renderScoreboard();
+    closeAddTeamModal();
+  });
+
+  const addTeamModal = document.getElementById('add-team-modal');
+
+  function openAddTeamModal() {
+    renderAddTeamIconPicker();
+    addTeamModal.classList.remove('hidden');
+    document.getElementById('new-team-name').focus();
+  }
+
+  function closeAddTeamModal() {
+    addTeamModal.classList.add('hidden');
+  }
+
+  document.getElementById('open-add-team-btn').addEventListener('click', openAddTeamModal);
+  document.getElementById('close-add-team-btn').addEventListener('click', closeAddTeamModal);
+  addTeamModal.addEventListener('click', (e) => {
+    if (e.target === addTeamModal) closeAddTeamModal();
+  });
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>
